@@ -29,8 +29,9 @@
         <button class="nav-item" data-view="practice"><span class="nav-icon">◎</span>笔面模拟</button>
         <button class="nav-item" data-view="mail"><span class="nav-icon">✉</span>邮件中心</button>
         <button class="nav-item" data-view="materials"><span class="nav-icon">▣</span>简历材料</button>
-        <button class="nav-item" data-view="timeline"><span class="nav-icon">◷</span>流程时间线</button>
-        <button class="nav-item" data-view="brain"><span class="nav-icon">🧠</span>大脑助手</button>
+      <button class="nav-item" data-view="timeline"><span class="nav-icon">◷</span>流程时间线</button>
+      <button class="nav-item" data-view="apply"><span class="nav-icon">✓</span>待投递</button>
+      <button class="nav-item" data-view="brain"><span class="nav-icon">🧠</span>大脑助手</button>
       </nav>
 
       <div class="sidebar-footer">
@@ -315,6 +316,27 @@
     <button class="pet-body" id="petBody" title="查看提醒"><span class="pet-face">·ᴗ·</span></button>
   </div>
 
+  <section class="view" id="applyView">
+    <div class="view-header">
+      <div>
+        <p class="eyebrow">Auto-filter &amp; apply</p>
+        <h2>待投递名单</h2>
+        <p class="section-copy">系统按你的偏好自动筛选岗位并打分，生成待投递名单。确认后系统写入管线并打开岗位链接供你完成最终提交（代点提交需在偏好中开启，且需另接浏览器自动化引擎）。</p>
+      </div>
+      <div class="view-actions">
+        <button class="text-button" id="openPrefsButton" type="button">⚙ 筛选偏好</button>
+        <button class="text-button" id="reFilterButton" type="button">↻ 重新筛选</button>
+        <button class="primary-button" id="batchApplyButton" type="button">✓ 批量确认投递</button>
+      </div>
+    </div>
+    <div class="apply-summary" id="applySummary"></div>
+    <div class="recommend-list" id="applyList"></div>
+    <details class="rejected-details">
+      <summary>被筛掉的岗位（点开查看，便于校准偏好）</summary>
+      <div class="recommend-list" id="rejectedList"></div>
+    </details>
+  </section>
+
   <dialog class="modal" id="jobModal">
     <form method="dialog" id="jobForm">
       <div class="modal-heading"><div><p class="eyebrow">Job record</p><h2 id="jobModalTitle">新增岗位</h2></div><button type="button" class="close-button" data-close-modal="jobModal">×</button></div>
@@ -395,6 +417,27 @@
         <label class="full-width">结果页/错题截图<input id="nowcoderScreenshot" type="file" accept="image/*" /></label>
       </div>
       <div class="modal-actions"><button type="button" class="secondary-button" data-close-modal="nowcoderModal">取消</button><button type="submit" class="primary-button">保存刷题记录</button></div>
+    </form>
+  </dialog>
+
+  <dialog class="modal" id="prefsModal">
+    <form method="dialog" id="prefsForm">
+      <div class="modal-heading"><div><p class="eyebrow">Filter preferences</p><h2>筛选偏好</h2></div><button type="button" class="close-button" data-close-modal="prefsModal">×</button></div>
+      <p class="section-copy">这些是自动筛选的依据。初次已根据历史投递记录推断，请按需增删。</p>
+      <div class="form-grid">
+        <label class="full-width">期望城市（逗号分隔）<input id="prefCities" placeholder="北京, 上海, 杭州" /></label>
+        <label class="full-width">岗位关键词（命中加分，逗号分隔）<input id="prefRoles" placeholder="后端, Java, 大模型, Agent" /></label>
+        <label class="full-width">排除岗位词（命中淘汰，逗号分隔）<input id="prefRolesExclude" placeholder="实习, 测试, 运维" /></label>
+        <label class="full-width">公司黑名单（命中淘汰，逗号分隔）<input id="prefCompanyBlack" placeholder="某外包公司" /></label>
+        <label class="full-width">公司白名单（命中直接通过，逗号分隔）<input id="prefCompanyWhite" placeholder="心仪公司" /></label>
+        <label class="full-width">风险/不合适词（命中淘汰，逗号分隔）<input id="prefExclude" placeholder="猎头, 外包, 押金..." /></label>
+        <label>月薪下限(k)<input id="prefMinSalary" type="number" min="0" /></label>
+        <label>通过阈值(分)<input id="prefMinScore" type="number" min="0" max="100" /></label>
+        <label>每日上限(个)<input id="prefDaily" type="number" min="1" max="200" /></label>
+        <label class="checkbox"><input type="checkbox" id="prefOnlyCity" /> 只接受列表城市</label>
+        <label class="checkbox"><input type="checkbox" id="prefAutoSubmit" /> 确认后代点提交(需另接自动化引擎)</label>
+      </div>
+      <div class="modal-actions"><button type="button" class="secondary-button" data-close-modal="prefsModal">取消</button><button type="submit" class="primary-button" id="savePrefsButton">保存偏好</button></div>
     </form>
   </dialog>
 

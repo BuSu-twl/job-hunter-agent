@@ -340,3 +340,20 @@ select, input, textarea { width: 100%; padding: 10px 11px; border: 1px solid var
 .organize-cell span{display:block;font-size:11px;color:#6b7280;margin-bottom:2px}
 .organize-cell strong{font-size:16px;color:#111827}
 .organize-note{font-size:12px;color:#b45309;line-height:1.5}
+
+/* ---- 待投递名单 / 自动筛选 ---- */
+.view-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+.view-header .section-copy { margin: 6px 0 0; max-width: 640px; }
+.view-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.apply-summary { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+.apply-summary .pill { background: #f1f5f9; border: 1px solid var(--line); border-radius: 999px; padding: 4px 12px; font-size: 12px; color: #475569; }
+.apply-summary .pill strong { color: var(--ink); margin-left: 4px; }
+.recommend-card.is-rejected { opacity: .72; border-style: dashed; }
+.recommend-card.is-rejected .recommend-main strong { color: #94a3b8; }
+.recommend-card.is-applied { opacity: .6; }
+.rejected-details { margin-top: 18px; border-top: 1px solid var(--line); padding-top: 10px; }
+.rejected-details summary { cursor: pointer; font-size: 13px; color: #64748b; }
+.small-button.ghost { background: transparent; color: #94a3b8; border-color: transparent; }
+.small-button.ghost:hover { color: #ef4444; }
+.checkbox { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #475569; }
+.checkbox input { width: auto; }

@@ -6,6 +6,7 @@
 // 安全：每次实际改动前自动备份 state.json；提供 dryRun 模式先行预览。
 const fs = require("fs");
 const path = require("path");
+const filter = require("./filter");
 
 const STATE_PATH = path.join(__dirname, "data", "长期记忆", "state.json");
 const BACKUP_DIR = path.join(__dirname, "data", "长期记忆");
@@ -305,6 +306,14 @@ function runOrganize({ dryRun = false, state = null, ingestMessages = null } = {
   auditJobs(st, changes);
   autoStatusFlow(st, changes);
   buildSummary(st, changes);
+  // 自动筛选：基于偏好把通过门槛的岗位写入待投递名单（recommendedJobs），未通过的记入 filterRejected 供复查
+  try {
+    const prefs = filter.ensurePreferences(st);
+    const fr = filter.applyFilterToState(st, prefs, { dryRun });
+    changes.push({ type: "filter", recommended: fr.recommended, added: fr.added, updated: fr.updated, rejected: fr.rejected, done: !dryRun });
+  } catch (e) {
+    changes.push({ type: "filter", error: e.message, done: false });
+  }
   if (!dryRun) {
     writeState(st);
   }

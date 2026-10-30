@@ -36,7 +36,7 @@ const $$ = (selector) => [...document.querySelectorAll(selector)];
 
 function normalizeState(data = {}) {
   const next = { ...structuredClone(seed), ...data };
-  for (const key of ["jobs", "tests", "practiceHistory", "nowcoderRecords", "recommendedJobs", "inbox", "mail", "events"]) {
+  for (const key of ["jobs", "tests", "practiceHistory", "nowcoderRecords", "recommendedJobs", "filterRejected", "inbox", "mail", "events"]) {
     if (!Array.isArray(next[key])) next[key] = [];
   }
   return next;
@@ -222,6 +222,7 @@ function renderAll() {
   renderDistribution();
   renderRecent();
   renderRecommended();
+  renderApply();
   renderJobs();
   renderInbox();
   renderTests();
@@ -448,6 +449,136 @@ function renderRecommended() {
     const rec = list.find((item) => item.id === button.dataset.id);
     if (rec) { rec.applyStatus = "已投递"; saveState(); showToast("已标记为投递"); }
   }));
+}
+
+// ---------- 待投递名单 / 自动筛选 ----------
+function csvToArray(s) {
+  return String(s || "").split(/[,，]/).map((t) => t.trim()).filter(Boolean);
+}
+function arrayToCsv(a) {
+  return (a || []).join(", ");
+}
+function renderApply() {
+  const el = $("#applyList");
+  if (!el) return;
+  const recs = (state.recommendedJobs || [])
+    .filter((r) => r.applyStatus !== "已投递" && r.applyStatus !== "已忽略")
+    .sort((a, b) => (b.score || 0) - (a.score || 0));
+  el.innerHTML = recs.length ? recs.map((rec) => `
+    <article class="recommend-card ${(rec.applyStatus === "已投递") ? "is-applied" : ""}">
+      <div class="recommend-main">
+        <strong>${escapeHtml(rec.company)} · ${escapeHtml(rec.role)}</strong>
+        <small>${escapeHtml(rec.location || "未填地点")} · 来源 ${escapeHtml(rec.source || "")} · 评分 ${rec.score ?? "—"}</small>
+        <p class="recommend-reason">${escapeHtml(rec.reason || "")}</p>
+      </div>
+      <div class="recommend-side">
+        ${rec.link ? `<a class="small-button" href="${escapeHtml(rec.link)}" target="_blank" rel="noreferrer">查看岗位 ↗</a>` : ""}
+        <span class="status-pill">${escapeHtml(rec.applyStatus || "未投递")}</span>
+        <button class="small-button apply-one" data-id="${escapeHtml(rec.id)}" ${rec.applyStatus === "已投递" ? "disabled" : ""}>确认投递</button>
+        <button class="small-button ghost ignore-one" data-id="${escapeHtml(rec.id)}">忽略</button>
+      </div>
+    </article>`).join("")
+    : `<div class="empty-state">暂无待投递岗位。先去「邮件中心」同步、或点「重新筛选」生成名单。</div>`;
+  $$(".apply-one").forEach((b) => b.addEventListener("click", () => applyRecommended([b.dataset.id])));
+  $$(".ignore-one").forEach((b) => b.addEventListener("click", () => ignoreRecommended(b.dataset.id)));
+
+  const rej = $("#rejectedList");
+  if (rej) {
+    const rejected = (state.filterRejected || []).slice(0, 40);
+    rej.innerHTML = rejected.length ? rejected.map((r) => `
+      <article class="recommend-card is-rejected">
+        <div class="recommend-main">
+          <strong>${escapeHtml(r.company)} · ${escapeHtml(r.role)}</strong>
+          <small>${escapeHtml(r.location || "")}</small>
+          <p class="recommend-reason">${escapeHtml(r.reason || "")}</p>
+        </div>
+      </article>`).join("") : `<div class="empty-state">没有因筛选被排除的岗位。</div>`;
+  }
+  const sum = $("#applySummary");
+  if (sum) {
+    const total = (state.recommendedJobs || []).length;
+    const pending = recs.length;
+    sum.innerHTML = `<span class="pill">待投递 <strong>${pending}</strong></span><span class="pill">已投递 <strong>${total - pending}</strong></span><span class="pill">被排除 <strong>${(state.filterRejected || []).length}</strong></span>`;
+  }
+}
+function ignoreRecommended(id) {
+  const rec = (state.recommendedJobs || []).find((r) => r.id === id);
+  if (!rec) return;
+  if (!window.confirm(`将「${rec.company} · ${rec.role}」移出待投递名单（本次会话生效，下次筛选可能再次进入）？`)) return;
+  rec.applyStatus = "已忽略";
+  saveState();
+  showToast("已忽略该岗位");
+}
+async function applyRecommended(ids) {
+  if (!ids || !ids.length) return;
+  try {
+    const resp = await fetch("/api/recommended/apply", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ids }) });
+    const data = await resp.json();
+    if (!data.ok) throw new Error(data.error || "apply_failed");
+    (data.applied || []).forEach((a) => { if (a.link) window.open(a.link, "_blank", "noopener"); });
+    await bootstrapState();
+    renderApply();
+    const limited = (data.limited || []).length;
+    showToast(`已确认投递 ${data.applied.length} 个${limited ? `；今日达上限，剩余 ${limited} 个未投` : ""}`);
+  } catch (e) {
+    showToast("确认投递失败：" + e.message);
+  }
+}
+async function runFilterNow() {
+  try {
+    const resp = await fetch("/api/filter/run", { method: "POST" });
+    const data = await resp.json();
+    if (!data.ok) throw new Error(data.error || "filter_failed");
+    await bootstrapState();
+    showToast(`重新筛选完成：待投递 ${data.report.recommended}，新增 ${data.report.added}，排除 ${data.report.rejected}`);
+  } catch (e) {
+    showToast("筛选失败：" + e.message);
+  }
+}
+async function openPrefsModal() {
+  try {
+    const resp = await fetch("/api/preferences");
+    const data = await resp.json();
+    const p = data.preferences || {};
+    $("#prefCities").value = arrayToCsv(p.cities);
+    $("#prefRoles").value = arrayToCsv(p.rolesInclude);
+    $("#prefRolesExclude").value = arrayToCsv(p.rolesExclude);
+    $("#prefCompanyBlack").value = arrayToCsv(p.companyBlacklist);
+    $("#prefCompanyWhite").value = arrayToCsv(p.companyWhitelist);
+    $("#prefExclude").value = arrayToCsv(p.excludeKeywords);
+    $("#prefMinSalary").value = p.minSalaryK || 0;
+    $("#prefMinScore").value = p.minScore || 50;
+    $("#prefDaily").value = p.dailyLimit || 15;
+    $("#prefOnlyCity").checked = Boolean(p.onlyListedCities);
+    $("#prefAutoSubmit").checked = Boolean(p.autoSubmit);
+    $("#prefsModal").showModal();
+  } catch (e) {
+    showToast("读取偏好失败：" + e.message);
+  }
+}
+async function savePrefs() {
+  const prefs = {
+    cities: csvToArray($("#prefCities").value),
+    rolesInclude: csvToArray($("#prefRoles").value),
+    rolesExclude: csvToArray($("#prefRolesExclude").value),
+    companyBlacklist: csvToArray($("#prefCompanyBlack").value),
+    companyWhitelist: csvToArray($("#prefCompanyWhite").value),
+    excludeKeywords: csvToArray($("#prefExclude").value),
+    minSalaryK: Number($("#prefMinSalary").value) || 0,
+    minScore: Number($("#prefMinScore").value) || 50,
+    dailyLimit: Number($("#prefDaily").value) || 15,
+    onlyListedCities: $("#prefOnlyCity").checked,
+    autoSubmit: $("#prefAutoSubmit").checked
+  };
+  try {
+    const resp = await fetch("/api/preferences", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(prefs) });
+    const data = await resp.json();
+    if (!data.ok) throw new Error(data.error || "save_failed");
+    showToast("偏好已保存，正在按新偏好重新筛选…");
+    await runFilterNow();
+  } catch (e) {
+    showToast("保存偏好失败：" + e.message);
+  }
 }
 function renderJobs() {
   const search = ($("#jobSearch")?.value || "").toLowerCase();
@@ -853,8 +984,9 @@ function updatePet() {
 function switchView(view) {
   $$(".nav-item").forEach((item) => item.classList.toggle("active", item.dataset.view === view));
   $$(".view").forEach((item) => item.classList.toggle("active", item.id === `${view}View`));
-  const titles = { overview: "今日求职总览", jobs: "岗位管线", inbox: "截图补录", tests: "笔试测评", practice: "笔面试模拟", mail: "邮件中心", materials: "简历材料", timeline: "流程时间线", brain: "大脑助手" };
+  const titles = { overview: "今日求职总览", jobs: "岗位管线", inbox: "截图补录", tests: "笔试测评", practice: "笔面试模拟", mail: "邮件中心", materials: "简历材料", timeline: "流程时间线", apply: "待投递名单", brain: "大脑助手" };
   $("#pageTitle").textContent = titles[view];
+  if (view === "apply") renderApply();
 }
 
 function applyMail(id) {
@@ -1229,6 +1361,15 @@ $("#nowcoderForm").addEventListener("submit", saveNowcoderRecord);
 $("#testForm").addEventListener("submit", saveTest);
 $("#syncMailButton").addEventListener("click", syncMail);
 $("#organizeButton")?.addEventListener("click", runOrganizeNow);
+$("#openPrefsButton")?.addEventListener("click", openPrefsModal);
+$("#reFilterButton")?.addEventListener("click", runFilterNow);
+$("#batchApplyButton")?.addEventListener("click", async () => {
+  const ids = (state.recommendedJobs || []).filter((r) => r.applyStatus !== "已投递" && r.applyStatus !== "已忽略").map((r) => r.id);
+  if (!ids.length) { showToast("没有待投递岗位"); return; }
+  if (!window.confirm(`确认投递选中的 ${ids.length} 个岗位？系统将标记已投、写入管线并打开岗位链接。`)) return;
+  await applyRecommended(ids);
+});
+$("#savePrefsButton")?.addEventListener("click", (event) => { event.preventDefault(); savePrefs(); $("#prefsModal").close(); });
 $("#syncNowclawButton").addEventListener("click", syncNowclaw);
 $("#refreshMaterialsButton").addEventListener("click", fetchAssets);
 $$(".mail-preset").forEach((button) => button.addEventListener("click", () => { $("#mailHost").value = button.dataset.host; $("#mailPort").value = 993; }));

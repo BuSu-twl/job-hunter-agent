@@ -10,6 +10,7 @@ const { simpleParser } = require("mailparser");
 const { createWorker } = require("tesseract.js");
 const chiSim = require("@tesseract.js-data/chi_sim");
 const organize = require("./organize");
+const filter = require("./filter");
 
 const app = express();
 const port = process.env.PORT || 4173;
@@ -864,6 +865,74 @@ app.post("/api/organize", (req, res) => {
   try {
     const report = organize.runOrganize({ dryRun });
     res.json({ ok: true, dryRun, report });
+  } catch (error) {
+    res.status(500).json({ ok: false, error: error.message });
+  }
+});
+
+// ============ 自动筛选 / 偏好 / 待投递 ============
+app.get("/api/preferences", (req, res) => {
+  try {
+    const prefs = filter.ensurePreferences(readState());
+    res.json({ ok: true, preferences: prefs });
+  } catch (error) {
+    res.status(500).json({ ok: false, error: error.message });
+  }
+});
+
+app.put("/api/preferences", (req, res) => {
+  try {
+    const body = req.body || {};
+    const saved = filter.writePreferences(body);
+    res.json({ ok: true, preferences: saved });
+  } catch (error) {
+    res.status(500).json({ ok: false, error: error.message });
+  }
+});
+
+// 按当前偏好重新筛选，刷新待投递名单（recommendedJobs）与被排除清单（filterRejected）
+app.post("/api/filter/run", (req, res) => {
+  try {
+    const state = readState();
+    const prefs = filter.ensurePreferences(state);
+    const report = filter.applyFilterToState(state, prefs, { dryRun: false });
+    writeState({ recommendedJobs: state.recommendedJobs, filterRejected: state.filterRejected });
+    res.json({ ok: true, report });
+  } catch (error) {
+    res.status(500).json({ ok: false, error: error.message });
+  }
+});
+
+// 确认投递：把指定推荐岗位标记为已投、写入主表管线、遵守每日上限。
+// 说明：投递动作本身在当前实现下由前端打开岗位链接完成最终提交；autoSubmit 开关仅记录意图，
+// 真正的“代点提交”需另接浏览器自动化引擎（见 README 合规提示），默认关闭。
+app.post("/api/recommended/apply", (req, res) => {
+  try {
+    const body = req.body || {};
+    const ids = Array.isArray(body.ids) ? body.ids : (body.id ? [body.id] : []);
+    if (!ids.length) return res.status(400).json({ ok: false, error: "missing_ids" });
+    const state = readState();
+    const prefs = filter.ensurePreferences(state);
+    const recs = state.recommendedJobs || [];
+    const today = new Date().toISOString().slice(0, 10);
+    const dailyFile = path.join(shortTermRoot, "daily-apply.json");
+    let daily = { date: today, count: 0 };
+    try { const d = JSON.parse(fs.readFileSync(dailyFile, "utf8")); if (d && d.date === today) daily = d; } catch {}
+    const limit = prefs.dailyLimit || 15;
+    const applied = [], skipped = [], limited = [];
+    for (const id of ids) {
+      const rec = recs.find((r) => r.id === id);
+      if (!rec) { skipped.push({ id, reason: "not_found" }); continue; }
+      if (rec.applyStatus === "已投递") { skipped.push({ id, reason: "already" }); continue; }
+      if (daily.count >= limit) { limited.push(id); continue; }
+      filter.ensurePipelineJob(state, rec, { autoSubmit: Boolean(prefs.autoSubmit) });
+      daily.count += 1;
+      applied.push({ id, company: rec.company, role: rec.role, link: rec.link || "" });
+    }
+    state.dailyApply = daily;
+    try { writeJson(dailyFile, daily); } catch {}
+    writeState({ recommendedJobs: state.recommendedJobs, jobs: state.jobs, events: state.events });
+    res.json({ ok: true, applied, skipped, limited, dailyLimit: limit, dailyCount: daily.count });
   } catch (error) {
     res.status(500).json({ ok: false, error: error.message });
   }
