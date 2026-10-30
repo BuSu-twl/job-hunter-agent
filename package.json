@@ -1,0 +1,15 @@
+{
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@tesseract.js-data/chi_sim": "^1.0.0",
+    "@tesseract.js-data/eng": "^1.0.0",
+    "express": "^5.2.1",
+    "imapflow": "^2.0.2",
+    "ipaddr.js": "^1.9.1",
+    "mailparser": "^3.9.24",
+    "multer": "^2.3.0",
+    "tesseract.js": "^7.0.0"
+  }
+}

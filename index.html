@@ -1,0 +1,404 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>求职智能体</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="startup-gate" id="startupGate" role="status" aria-live="polite">
+    <div class="startup-indicator"></div>
+    <span>正在读取本地求职记录…</span>
+  </div>
+  <div class="app-shell" id="appShell" inert>
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">J</div>
+        <div>
+          <strong>求职智能体</strong>
+          <span>Career cockpit</span>
+        </div>
+      </div>
+
+      <nav class="nav-list" aria-label="主导航">
+        <button class="nav-item active" data-view="overview"><span class="nav-icon">⌂</span>总览</button>
+        <button class="nav-item" data-view="jobs"><span class="nav-icon">▤</span>岗位管线</button>
+        <button class="nav-item" data-view="inbox"><span class="nav-icon">↥</span>截图补录</button>
+        <button class="nav-item" data-view="tests"><span class="nav-icon">✓</span>笔试测评</button>
+        <button class="nav-item" data-view="practice"><span class="nav-icon">◎</span>笔面模拟</button>
+        <button class="nav-item" data-view="mail"><span class="nav-icon">✉</span>邮件中心</button>
+        <button class="nav-item" data-view="materials"><span class="nav-icon">▣</span>简历材料</button>
+        <button class="nav-item" data-view="timeline"><span class="nav-icon">◷</span>流程时间线</button>
+        <button class="nav-item" data-view="brain"><span class="nav-icon">🧠</span>大脑助手</button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="sync-status"><span class="status-dot"></span><span>本地数据已保存</span></div>
+        <button class="ghost-button" id="resetDataButton">恢复示例数据</button>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow" id="todayLabel">Loading date…</p>
+          <h1 id="pageTitle">今日求职总览</h1>
+        </div>
+        <div class="top-actions">
+          <button class="icon-button" id="petToggleButton" title="显示或隐藏桌宠提醒">◉</button>
+          <button class="primary-button" id="addJobButton">＋ 新增岗位</button>
+        </div>
+      </header>
+
+      <section class="view active" id="overviewView">
+        <div class="hero-strip">
+          <div>
+            <p class="eyebrow">今日节奏</p>
+            <h2>把每一次沟通，变成下一步行动。</h2>
+            <p class="hero-copy">截图、邮件、投递记录都可以先放进收件箱，再由你确认后进入岗位流程。</p>
+          </div>
+          <div class="hero-progress">
+            <div class="progress-label"><span>本周求职节奏</span><strong id="weeklyProgressText">0 / 8</strong></div>
+            <div class="progress-track"><span id="weeklyProgressBar"></span></div>
+            <small>完成投递、跟进或面试准备即可累计进度</small>
+          </div>
+        </div>
+
+        <div class="metric-grid" id="metricGrid"></div>
+
+        <section class="panel organize-panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Auto organize</p>
+                <h3>自动整理</h3>
+                <p class="section-copy">去重合并、状态统一、超期挂起自动执行；每次改动前自动备份。</p>
+              </div>
+              <button class="small-button" id="organizeButton">运行自动整理</button>
+            </div>
+            <div class="organize-report" id="organizeReport"></div>
+          </section>
+
+        <section class="panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Pipeline pulse</p>
+                <h3>岗位状态分布</h3>
+              </div>
+              <button class="text-button" data-view-link="jobs">进入管线 →</button>
+            </div>
+            <div class="distribution" id="distribution"></div>
+          </section>
+
+        
+
+        <div class="content-grid two-columns">
+          <section class="panel urgent-panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Urgent</p>
+                <h3>紧急事项</h3>
+              </div>
+              <button class="text-button" data-view-link="jobs">进入管线 →</button>
+            </div>
+            <div class="task-list" id="urgentList"></div>
+          </section>
+          <section class="panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Priority queue</p>
+                <h3>今天先处理</h3>
+              </div>
+              <button class="text-button" data-view-link="jobs">查看全部 →</button>
+            </div>
+            <div class="task-list" id="priorityList"></div>
+          </section>
+          
+        </div>
+
+        <section class="panel recent-panel">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">Recent activity</p>
+              <h3>最近动态</h3>
+            </div>
+            <span class="muted" id="activityCount"></span>
+          </div>
+          <div class="activity-list" id="recentActivity"></div>
+        </section>
+
+        <section class="panel recommended-panel">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">Recommended jobs</p>
+              <h3>推荐岗位</h3>
+              <p class="section-copy">来源：BOSS直聘 / 腾讯文档内推表等，按你的 RAG · 大模型 · 多智能体方向匹配。</p>
+            </div>
+            <button class="text-button" data-view-link="jobs">进入管线 →</button>
+          </div>
+          <div class="recommended-list" id="recommendedList"></div>
+        </section>
+      </section>
+
+      <section class="view" id="jobsView">
+        <div class="section-toolbar">
+          <div>
+            <p class="eyebrow">Job pipeline</p>
+            <h2>岗位管线</h2>
+          </div>
+          <div class="toolbar-controls">
+            <label class="search-field"><span>⌕</span><input id="jobSearch" placeholder="搜索公司或岗位" /></label>
+            <select id="jobStatusFilter"><option value="全部">全部状态</option></select>
+          </div>
+        </div>
+        <div class="jobs-table-wrap">
+          <table class="jobs-table">
+            <thead><tr><th>公司 / 岗位</th><th>渠道</th><th>地点</th><th>当前状态</th><th>投递日期</th><th>材料</th><th></th></tr></thead>
+            <tbody id="jobsTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="view" id="inboxView">
+        <div class="section-toolbar">
+          <div>
+            <p class="eyebrow">Mobile inbox</p>
+            <h2>截图补录</h2>
+            <p class="section-copy">把 BOSS 聊天、短信或邮件截图拖进来，先识别为待确认记录。</p>
+          </div>
+          <button class="secondary-button" id="pasteTextButton">＋ 粘贴文字记录</button>
+        </div>
+        <div class="drop-zone" id="dropZone">
+          <div class="drop-icon">↥</div>
+          <h3>拖入招聘截图</h3>
+          <p>支持 PNG、JPG、WEBP。当前版本会保存截图并建立待确认卡片。</p>
+          <label class="upload-button">选择截图<input type="file" id="screenshotInput" accept="image/*" multiple hidden /></label>
+        </div>
+        <div class="inbox-grid" id="inboxGrid"></div>
+      </section>
+
+      <section class="view" id="testsView">
+        <div class="section-toolbar">
+          <div>
+            <p class="eyebrow">Email tests</p>
+            <h2>笔试测评</h2>
+            <p class="section-copy">笔试通常来自邮件，完成状态由你手动修改，新增记录默认未完成。</p>
+          </div>
+          <button class="primary-button" id="addTestButton">＋ 新增笔试</button>
+        </div>
+        <div class="test-summary" id="testSummary"></div>
+        <div class="test-list" id="testList"></div>
+      </section>
+
+      <section class="view" id="practiceView">
+        <div class="section-toolbar">
+          <div>
+            <p class="eyebrow">Practice studio</p>
+            <h2>笔面试模拟</h2>
+            <p class="section-copy">用短练习保持手感：笔试限时作答，面试逐题回答并留下复盘。</p>
+          </div>
+          <div class="practice-tabs">
+            <button class="practice-tab active" data-practice-mode="written">笔试模拟</button>
+            <button class="practice-tab" data-practice-mode="interview">面试模拟</button>
+          </div>
+        </div>
+
+        <div class="practice-layout">
+          <section class="panel practice-config">
+            <p class="eyebrow">Session setup</p>
+            <h3>开始一次练习</h3>
+            <div class="practice-field">
+              <label>练习方向<select id="practiceTrack"><option>AI应用/Agent</option><option>Java后端</option><option>C++/嵌入式</option><option>通用校招</option></select></label>
+              <label>练习时长<select id="practiceDuration"><option value="10">10 分钟</option><option value="20">20 分钟</option><option value="30">30 分钟</option></select></label>
+            </div>
+            <button class="primary-button" id="startPracticeButton">▶ 开始模拟</button>
+            <a class="practice-external-link" href="https://www.nowcoder.com/exam/intelligent?questionJobId=10&subTabName=intelligent_page" target="_blank" rel="noreferrer">打开牛客在线测试 ↗</a>
+            <button class="secondary-button practice-record-button" id="addNowcoderRecordButton" type="button">记录牛客刷题</button>
+            <div class="practice-history" id="practiceHistory"></div>
+            <div class="practice-review" id="practiceReview"></div>
+          </section>
+          <section class="panel practice-session" id="practiceSession">
+            <div class="session-empty">
+              <div class="session-icon">◎</div>
+              <h3>还没有开始练习</h3>
+              <p>选择方向后开始，练习记录会保存在本机。</p>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section class="view" id="mailView">
+        <div class="section-toolbar">
+          <div>
+            <p class="eyebrow">Mail intelligence</p>
+            <h2>邮件中心</h2>
+            <p class="section-copy">连接邮箱后，自动扫描投递回执、笔试测评、面试邀请、Offer 和拒信。识别结果先进入待确认区。</p>
+          </div>
+          <div class="top-actions"><button class="secondary-button" id="syncNowclawButton">↻ 同步 Nowclaw</button><button class="primary-button" id="syncMailButton">↻ 同步邮件</button></div>
+        </div>
+        <section class="mail-settings panel">
+          <div class="panel-heading">
+            <div><p class="eyebrow">Local IMAP</p><h3>邮箱连接</h3></div>
+            <span class="muted">密码仅发送到本机服务，不保存到浏览器</span>
+          </div>
+          <div class="form-grid compact-grid">
+            <label>邮箱地址<input id="mailUser" type="email" value="1347692350@qq.com" placeholder="例如 1347692350@qq.com" autocomplete="username" /></label>
+            <label>授权码<input id="mailPassword" type="password" placeholder="只在此处输入，不会保存" autocomplete="current-password" /></label>
+            <label>IMAP服务器<input id="mailHost" value="imap.qq.com" placeholder="imap.qq.com" /></label>
+            <label>端口<input id="mailPort" type="number" value="993" /></label>
+            <label>邮箱文件夹<input id="mailbox" value="INBOX" /></label>
+            <label>扫描最近<input id="mailDays" type="number" min="1" max="365" value="30" /> 天</label>
+          </div>
+          <div class="mail-presets">
+            <button class="small-button mail-preset" data-host="imap.qq.com">QQ邮箱</button>
+            <button class="small-button mail-preset" data-host="imap.163.com">163邮箱</button>
+            <button class="small-button mail-preset" data-host="imap.gmail.com">Gmail</button>
+            <span class="muted" id="mailSyncStatus">尚未同步</span>
+          </div>
+          <div class="nowclaw-status" id="nowclawStatus">正在检测 Nowclaw 连接…</div>
+        </section>
+        <div class="mail-summary" id="mailSummary"></div>
+        <div class="mail-list" id="mailList"></div>
+      </section>
+
+      <section class="view" id="materialsView">
+        <div class="section-toolbar">
+          <div>
+            <p class="eyebrow">Resume library</p>
+            <h2>简历材料</h2>
+            <p class="section-copy">自动扫描「简历资料」目录，投递时按岗位方向挑选对应简历版本。</p>
+          </div>
+          <button class="secondary-button" id="refreshMaterialsButton">↻ 刷新</button>
+        </div>
+        <div class="materials-summary" id="materialsSummary"></div>
+        <div class="materials-grid" id="materialsGrid"></div>
+      </section>
+
+            <section class="view" id="brainView">
+        <div class="panel">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">AI brain</p>
+              <h3>大脑助手</h3>
+              <p class="section-copy">用大模型分析邮件、判断截图归档、给出流程建议与岗位推荐。结果仅供参考，写入前请确认。</p>
+            </div>
+          </div>
+          <div class="brain-actions">
+            <button class="small-button" id="brainMailBtn">📧 分析邮件</button>
+            <button class="small-button" id="brainCaptureBtn">🖼 截图归档判断</button>
+            <button class="small-button" id="brainFlowBtn">🔄 流程建议</button>
+            <button class="small-button" id="brainRecommendBtn">⭐ 智能推荐岗位</button>
+          </div>
+          <div id="brainResult" class="brain-result"></div>
+          <div class="brain-chat">
+            <div class="chat-log" id="brainChatLog"><div class="empty-state">问点什么：例如「我明天有什么紧急事项」「分析这封邮件」「这家公司值得投吗」</div></div>
+            <div class="chat-input-row">
+              <input type="text" id="brainQuestion" placeholder="问大脑…" />
+              <button class="primary-button" id="brainSendBtn">发送</button>
+            </div>
+          </div>
+        </div>
+      </section><section class="view" id="timelineView">
+        <div class="section-toolbar">
+          <div>
+            <p class="eyebrow">Event stream</p>
+            <h2>流程时间线</h2>
+          </div>
+        </div>
+        <div class="timeline" id="timeline"></div>
+      </section>
+    </main>
+  </div>
+
+  <div class="pet" id="pet">
+    <div class="pet-bubble" id="petBubble">今天也慢慢推进一件事。</div>
+    <button class="pet-body" id="petBody" title="查看提醒"><span class="pet-face">·ᴗ·</span></button>
+  </div>
+
+  <dialog class="modal" id="jobModal">
+    <form method="dialog" id="jobForm">
+      <div class="modal-heading"><div><p class="eyebrow">Job record</p><h2 id="jobModalTitle">新增岗位</h2></div><button type="button" class="close-button" data-close-modal="jobModal">×</button></div>
+      <input type="hidden" id="jobId" />
+      <div class="form-grid">
+        <label>公司<input id="jobCompany" required /></label>
+        <label>岗位<input id="jobRole" required /></label>
+        <label>渠道<select id="jobChannel"></select></label>
+        <label>当前状态<select id="jobStatus"></select></label>
+        <label>地点<input id="jobLocation" /></label>
+        <label>优先级<select id="jobPriority"></select></label>
+        <label>投递日期<input id="jobSubmitted" type="date" /></label>
+        <label>最近更新<input id="jobUpdated" type="date" /></label>
+        <label>下次跟进<input id="jobFollowup" type="date" /></label>
+        <label>面试时间<input id="jobInterviewAt" type="datetime-local" /></label>
+        <label class="full-width">岗位链接<input id="jobLink" type="url" placeholder="https://" /></label>
+        <label class="full-width">下一步<textarea id="jobNext" rows="3"></textarea></label>
+      </div>
+      <div class="modal-actions"><button type="button" class="secondary-button" data-close-modal="jobModal">取消</button><button type="submit" class="primary-button" id="saveJobButton">保存岗位</button></div>
+    </form>
+  </dialog>
+
+  <dialog class="modal" id="testModal">
+    <form method="dialog" id="testForm">
+      <div class="modal-heading"><div><p class="eyebrow">Email test</p><h2>新增笔试测评</h2></div><button type="button" class="close-button" data-close-modal="testModal">×</button></div>
+      <div class="form-grid">
+        <label>关联岗位<select id="testJob"></select></label>
+        <label>邮件收到日期<input id="testReceived" type="date" required /></label>
+        <label>截止时间<input id="testDeadline" type="datetime-local" /></label>
+        <label>邮件主题<input id="testSubject" /></label>
+        <label>发件人<input id="testSender" /></label>
+        <label>试卷/链接<input id="testLink" /></label>
+        <label>完成状态<select id="testStatus"></select></label>
+        <label class="full-width">备注<textarea id="testNote" rows="3"></textarea></label>
+      </div>
+      <div class="modal-actions"><button type="submit" class="primary-button">保存笔试</button></div>
+    </form>
+  </dialog>
+
+  <dialog class="modal" id="textModal">
+    <form method="dialog" id="textForm">
+      <div class="modal-heading"><div><p class="eyebrow">Quick capture</p><h2>粘贴文字记录</h2></div><button type="button" class="close-button" data-close-modal="textModal">×</button></div>
+      <label>聊天或邮件摘要<textarea id="captureText" rows="8" placeholder="例如：HR 说下周二下午两点进行一面，请准备项目介绍。"></textarea></label>
+      <div class="modal-actions"><button type="button" class="secondary-button" data-close-modal="textModal">取消</button><button type="submit" class="primary-button">加入收件箱</button></div>
+    </form>
+  </dialog>
+
+  <dialog class="modal" id="inboxModal">
+    <form method="dialog" id="inboxForm">
+      <div class="modal-heading"><div><p class="eyebrow">Confirm capture</p><h2 id="inboxModalTitle">确认截图记录</h2></div><button type="button" class="close-button" data-close-modal="inboxModal">×</button></div>
+      <input type="hidden" id="inboxId" />
+      <div class="capture-preview" id="capturePreview"></div>
+      <div class="form-grid">
+        <label class="full-width">关联岗位<select id="captureJob"></select></label>
+        <label>公司<input id="captureCompany" required /></label>
+        <label>岗位<input id="captureRole" required /></label>
+        <label>平台<select id="captureChannel"></select></label>
+        <label>材料类型<select id="captureMaterial"></select></label>
+        <label>状态<select id="captureStatus"></select></label>
+        <label>事件日期<input id="captureDate" type="date" /></label>
+        <label>投递日期<input id="captureSubmitted" type="date" /></label>
+        <label>下一步<input id="captureNext" /></label>
+        <label class="full-width">内容摘要<textarea id="captureSummary" rows="4"></textarea></label>
+      </div>
+      <div class="modal-actions"><button type="button" class="secondary-button" data-close-modal="inboxModal">取消</button><button type="submit" class="primary-button">写入岗位流程</button></div>
+    </form>
+  </dialog>
+
+  <dialog class="modal" id="nowcoderModal">
+    <form method="dialog" id="nowcoderForm">
+      <div class="modal-heading"><div><p class="eyebrow">Nowcoder log</p><h2>记录牛客刷题</h2></div><button type="button" class="close-button" data-close-modal="nowcoderModal">×</button></div>
+      <div class="form-grid">
+        <label>刷题日期<input id="nowcoderDate" type="date" required /></label>
+        <label>题型/方向<input id="nowcoderTrack" placeholder="例如：AI、Java、行测" required /></label>
+        <label>题目数量<input id="nowcoderTotal" type="number" min="0" placeholder="例如 20" /></label>
+        <label>得分<input id="nowcoderScore" type="number" min="0" max="100" placeholder="百分制，可不填" /></label>
+        <label class="full-width">错题与原因<textarea id="nowcoderMistakes" rows="5" placeholder="粘贴错题、题号或总结；每行一条更方便复盘"></textarea></label>
+        <label class="full-width">结果页/错题截图<input id="nowcoderScreenshot" type="file" accept="image/*" /></label>
+      </div>
+      <div class="modal-actions"><button type="button" class="secondary-button" data-close-modal="nowcoderModal">取消</button><button type="submit" class="primary-button">保存刷题记录</button></div>
+    </form>
+  </dialog>
+
+  <div class="toast" id="toast"></div>
+  <script src="./app.js"></script>
+</body>
+</html>

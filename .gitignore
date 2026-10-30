@@ -1,0 +1,25 @@
+# 依赖
+node_modules/
+
+# 运行时个人数据：含邮箱凭据(mail-config.json)与真实投递记录(state.json)，严禁提交
+data/
+
+# 大体积模型/训练数据（项目使用 @tesseract.js-data，本地 .traineddata 为遗留文件）
+*.traineddata
+
+# 日志
+*.log
+node_err.log
+node_out.log
+
+# 备份文件（本地自动生成，勿入库）
+*_backup*
+*.bak
+
+# 部署脚本（含服务器密钥/端口，勿公开）
+deploy/
+
+# 系统 / 编辑器
+.DS_Store
+Thumbs.db
+*.swp
